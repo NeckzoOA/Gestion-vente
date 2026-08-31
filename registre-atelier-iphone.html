@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registre d'atelier</title>
+<style>
+  :root{
+    --paper:#FAF6EE;
+    --paper-line:#E3D9C4;
+    --ink:#2E2A22;
+    --ink-soft:#6B6455;
+    --ochre:#B4802E;
+    --sage:#5E7052;
+    --rose:#A85039;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif;min-height:100vh;}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px;}
+  header{margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  h1{font-size:1.7rem;margin:0 0 4px;font-weight:600;letter-spacing:0.2px;}
+  .sub{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink-soft);font-size:0.88rem;}
+
+  .settings{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--paper-line);border-radius:8px;padding:6px 10px;white-space:nowrap;}
+  .settings label{font-size:0.72rem;color:var(--ink-soft);}
+  .settings input{width:48px;font-size:0.85rem;padding:3px 4px;border:1px solid var(--paper-line);border-radius:5px;text-align:right;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+
+  .banner{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.82rem;padding:10px 12px;border-radius:8px;margin-bottom:16px;display:none;}
+  .banner.error{display:block;background:#F7E5DE;color:var(--rose);border:1px solid #E5BCA9;}
+  .banner.warn{display:block;background:#F3EAD3;color:var(--ochre);border:1px solid #E4D2A0;}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--paper-line);border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;margin:0 0 22px;}
+  .stat{background:var(--card);padding:14px 10px;text-align:center;}
+  .stat-label{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.68rem;color:var(--ink-soft);margin-bottom:4px;}
+  .stat-value{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums;}
+  .stat-value.pos{color:var(--sage);}
+  .stat-value.cost{color:var(--rose);}
+
+  .tabs{display:flex;gap:2px;margin-bottom:18px;background:var(--paper-line);border-radius:8px;padding:2px;}
+  .tab{flex:1;text-align:center;padding:9px;border-radius:6px;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.85rem;font-weight:600;color:var(--ink-soft);background:transparent;border:none;}
+  .tab.active{background:var(--card);color:var(--ink);}
+  .tab .count{font-size:0.7rem;color:var(--ink-soft);margin-left:3px;}
+  .tab.active .count{color:var(--ochre);}
+
+  .card-box{background:var(--card);border:1px solid var(--paper-line);border-radius:10px;padding:16px;}
+  .form-title{font-size:1.02rem;margin-bottom:12px;font-weight:600;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .field{display:flex;flex-direction:column;}
+  .field.full{grid-column:1 / -1;}
+  label{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.72rem;color:var(--ink-soft);margin-bottom:4px;}
+  input[type=text],input[type=date]{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.95rem;padding:8px 9px;border:1px solid var(--paper-line);border-radius:6px;background:#fffefb;color:var(--ink);width:100%;}
+  input[type=text]:focus,input[type=date]:focus{outline:2px solid var(--ochre);outline-offset:1px;}
+
+  .photo-picker{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .photo-preview{width:56px;height:56px;border-radius:10px;background:var(--paper);border:1px dashed var(--paper-line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--ink-soft);font-size:0.7rem;text-align:center;}
+  .photo-preview img{width:100%;height:100%;object-fit:cover;}
+  .photo-btn{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.82rem;background:var(--paper);border:1px solid var(--paper-line);padding:8px 12px;border-radius:6px;color:var(--ink);}
+
+  .field-error{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.78rem;color:var(--rose);margin:-2px 0 10px;display:none;}
+  .field-error.show{display:block;}
+
+  button{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;cursor:pointer;border:none;}
+  .btn-add{width:100%;background:var(--ink);color:var(--paper);padding:10px;border-radius:6px;font-size:0.9rem;font-weight:600;margin-top:4px;}
+  .btn-add:active{opacity:0.85;}
+
+  .section-title{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.78rem;color:var(--ink-soft);margin:0 2px 10px;}
+
+  .stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+  .stock-card{background:var(--card);border:1px solid var(--paper-line);border-radius:10px;padding:14px;position:relative;}
+  .stock-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .stock-photo{width:44px;height:44px;border-radius:9px;background:var(--paper);border:1px solid var(--paper-line);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:1rem;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+  .stock-photo img{width:100%;height:100%;object-fit:cover;}
+  .stock-card-name{font-size:1.02rem;font-weight:700;flex:1;padding-right:30px;}
+  .qte-badge{position:absolute;top:14px;right:14px;background:var(--ochre);color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.72rem;font-weight:700;min-width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;padding:0 6px;}
+  .stock-card-nums{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.78rem;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;}
+  .btn-sell{width:100%;background:var(--sage);color:#fff;padding:8px;border-radius:6px;font-size:0.8rem;font-weight:600;}
+  .del-link{display:block;text-align:center;background:none;color:var(--ink-soft);font-size:0.7rem;text-decoration:underline;margin-top:8px;width:100%;}
+
+  .sell-form{margin-top:10px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:10px;display:none;}
+  .sell-form.open{display:block;}
+  .sell-form .row{margin-bottom:8px;}
+  .sell-form-actions{display:flex;gap:8px;}
+  .btn-confirm{background:var(--sage);color:#fff;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:600;flex:1;}
+  .btn-cancel{background:transparent;color:var(--ink-soft);padding:7px 10px;font-size:0.8rem;text-decoration:underline;}
+
+  .entry{padding:12px 4px;border-bottom:1px solid var(--paper-line);display:flex;gap:10px;align-items:flex-start;}
+  .entry:last-child{border-bottom:none;}
+  .entry-photo{width:36px;height:36px;border-radius:8px;background:var(--paper);border:1px solid var(--paper-line);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:0.85rem;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+  .entry-photo img{width:100%;height:100%;object-fit:cover;}
+  .entry-body{flex:1;min-width:0;}
+  .entry-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .entry-name{font-size:1rem;font-weight:600;}
+  .entry-meta{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.76rem;color:var(--ink-soft);margin-top:2px;}
+  .entry-nums{text-align:right;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .entry-profit{font-weight:700;font-size:0.92rem;}
+  .entry-profit.neg{color:var(--rose);}
+  .entry-profit.pos{color:var(--sage);}
+  .del{background:none;color:var(--ink-soft);font-size:0.72rem;text-decoration:underline;padding:0;margin-top:6px;}
+
+  .empty{text-align:center;color:var(--ink-soft);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:0.85rem;padding:30px 10px;}
+  .loading{text-align:center;color:var(--ink-soft);font-size:0.85rem;padding:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Registre d'atelier</h1>
+      <div class="sub">Stock, ventes et gains de tes créations</div>
+    </div>
+    <div class="settings">
+      <label for="pourcentage">Ma part</label>
+      <input id="pourcentage" type="text" inputmode="decimal" value="50">
+      <span style="font-size:0.8rem;color:var(--ink-soft);">%</span>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Ventes totales</div><div class="stat-value" id="statCA">–</div></div>
+    <div class="stat"><div class="stat-label">Ma part reçue</div><div class="stat-value" id="statPart">–</div></div>
+    <div class="stat"><div class="stat-label">Mon gain net</div><div class="stat-value pos" id="statProfit">–</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" type="button" data-tab="ajouter">Ajouter</button>
+    <button class="tab active" type="button" data-tab="stock">Stock<span class="count" id="countStock"></span></button>
+    <button class="tab" type="button" data-tab="ventes">Ventes<span class="count" id="countVentes"></span></button>
+  </div>
+
+  <div id="panel-ajouter" style="display:none;">
+    <div class="card-box">
+      <div class="form-title">Ajouter au stock</div>
+
+      <div class="photo-picker">
+        <div class="photo-preview" id="photoPreview">Photo</div>
+        <input type="file" accept="image/*" id="photoInput" style="display:none;">
+        <button type="button" class="photo-btn" id="photoBtn">Choisir une photo</button>
+      </div>
+
+      <div class="row">
+        <div class="field full">
+          <label for="nom">Objet</label>
+          <input type="text" id="nom" placeholder="ex. Vase en grès bleu">
+        </div>
+      </div>
+      <div class="field-error" id="err-nom">Indique un nom pour l'objet.</div>
+
+      <div class="row">
+        <div class="field">
+          <label for="cout">Coût de fabrication (€)</label>
+          <input type="text" inputmode="decimal" id="cout" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label for="prixPrevu">Prix de vente prévu (€)</label>
+          <input type="text" inputmode="decimal" id="prixPrevu" placeholder="0.00">
+        </div>
+      </div>
+      <div class="field-error" id="err-nums">Indique des montants valides (ex. 12.50).</div>
+
+      <div class="row">
+        <div class="field">
+          <label for="qte">Quantité en stock</label>
+          <input type="text" inputmode="numeric" id="qte" value="1">
+        </div>
+      </div>
+      <div class="field-error" id="err-qte">Indique une quantité valide (ex. 1).</div>
+
+      <button type="button" class="btn-add" id="btnAjouter">Ajouter au stock</button>
+    </div>
+  </div>
+
+  <div id="panel-stock">
+    <div class="section-title" id="stockTitle">En stock</div>
+    <div id="stockList"><div class="loading">Chargement…</div></div>
+  </div>
+
+  <div id="panel-ventes" style="display:none;">
+    <div class="section-title" id="ventesTitle">Historique des ventes</div>
+    <div id="ventesList"></div>
+  </div>
+</div>
+
+<script>
+let stock = [];
+let ventes = [];
+let pourcentage = 50;
+let pendingPhoto = null;
+const KEY = 'atelier-donnees';
+
+const fmt = n => n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const fmtDate = s => new Date(s + 'T00:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+const escapeHtml = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+const toNumber = s => {
+  if(s == null) return NaN;
+  const cleaned = String(s).trim().replace(',', '.').replace(/\s/g, '');
+  if(cleaned === '') return NaN;
+  return parseFloat(cleaned);
+};
+const initial = s => (s || '?').trim().charAt(0).toUpperCase();
+
+function showBanner(msg, type){
+  const b = document.getElementById('banner');
+  b.textContent = msg;
+  b.className = 'banner ' + (type || 'error');
+}
+function hideBanner(){
+  const b = document.getElementById('banner');
+  b.className = 'banner';
+  b.textContent = '';
+}
+
+/* ---------- Photo ---------- */
+document.getElementById('photoBtn').addEventListener('click', () => {
+  document.getElementById('photoInput').click();
+});
+document.getElementById('photoInput').addEventListener('change', async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  try{
+    const dataUrl = await resizeImage(file, 240);
+    pendingPhoto = dataUrl;
+    document.getElementById('photoPreview').innerHTML = `<img src="${dataUrl}" alt="">`;
+  }catch(e){
+    showBanner("Impossible de charger cette photo.", 'error');
+  }
+});
+
+function resizeImage(file, maxSize){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('lecture impossible'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image invalide'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > h){ if(w > maxSize){ h = Math.round(h * maxSize / w); w = maxSize; } }
+        else { if(h > maxSize){ w = Math.round(w * maxSize / h); h = maxSize; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- Sauvegarde ---------- */
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const data = JSON.parse(raw);
+      stock = data.stock || [];
+      ventes = data.ventes || [];
+      pourcentage = data.pourcentage != null ? data.pourcentage : 50;
+    }
+  }catch(e){
+    showBanner("Impossible de lire les données sauvegardées sur cet appareil.", 'error');
+  }
+  document.getElementById('pourcentage').value = pourcentage;
+  renderAll();
+}
+
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify({stock, ventes, pourcentage}));
+    hideBanner();
+  }catch(e){
+    showBanner("La sauvegarde a échoué (mémoire pleine ou navigation privée ?).", 'error');
+  }
+}
+
+function renderAll(){
+  renderStats();
+  renderStock();
+  renderVentes();
+}
+
+function renderStats(){
+  let ca = 0, part = 0, cout = 0;
+  ventes.forEach(v => {
+    ca += v.prixVente;
+    part += v.prixVente * (pourcentage / 100);
+    cout += v.cout;
+  });
+  const gain = part - cout;
+  document.getElementById('statCA').textContent = fmt(ca);
+  document.getElementById('statPart').textContent = fmt(part);
+  const profitEl = document.getElementById('statProfit');
+  profitEl.textContent = fmt(gain);
+  profitEl.className = 'stat-value ' + (gain >= 0 ? 'pos' : 'cost');
+  document.getElementById('countStock').textContent = stock.length ? `(${stock.length})` : '';
+  document.getElementById('countVentes').textContent = ventes.length ? `(${ventes.length})` : '';
+}
+
+function photoHtml(item, cls){
+  if(item.photo) return `<img src="${item.photo}" alt="">`;
+  return escapeHtml(initial(item.nom));
+}
+
+function renderStock(){
+  const list = document.getElementById('stockList');
+  const title = document.getElementById('stockTitle');
+  if(stock.length === 0){
+    title.textContent = 'En stock';
+    list.innerHTML = '<div class="empty">Rien en stock pour l’instant.<br>Va dans l’onglet « Ajouter » pour enregistrer ta première création.</div>';
+    return;
+  }
+  title.textContent = `En stock (${stock.length} objet${stock.length>1?'s':''})`;
+  list.innerHTML = `<div class="stock-grid">${stock.map(s => `
+    <div class="stock-card">
+      <span class="qte-badge">${s.qte}</span>
+      <div class="stock-card-head">
+        <div class="stock-photo">${photoHtml(s)}</div>
+        <div class="stock-card-name">${escapeHtml(s.nom)}</div>
+      </div>
+      <div class="stock-card-nums">Coût : ${fmt(s.cout)}<br>Prix prévu : ${fmt(s.prixPrevu)}</div>
+      <button class="btn-sell" type="button" data-id="${s.id}">Vendu</button>
+      <button class="del-link" type="button" data-id="${s.id}" data-action="delstock">retirer du stock</button>
+      <div class="sell-form" id="sell-${s.id}">
+        <div class="row">
+          <div class="field">
+            <label>Prix de vente réel</label>
+            <input type="text" inputmode="decimal" class="sell-prix" value="${s.prixPrevu}">
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="date" class="sell-date" value="${new Date().toISOString().slice(0,10)}">
+          </div>
+        </div>
+        <div class="sell-form-actions">
+          <button class="btn-confirm" type="button" data-id="${s.id}">Confirmer</button>
+          <button class="btn-cancel" type="button" data-id="${s.id}" data-action="cancelsell">Annuler</button>
+        </div>
+      </div>
+    </div>
+  `).join('')}</div>`;
+
+  list.querySelectorAll('.btn-sell').forEach(b => b.addEventListener('click', () => toggleSellForm(b.dataset.id)));
+  list.querySelectorAll('[data-action="cancelsell"]').forEach(b => b.addEventListener('click', () => toggleSellForm(b.dataset.id, true)));
+  list.querySelectorAll('.btn-confirm').forEach(b => b.addEventListener('click', () => confirmSell(b.dataset.id)));
+  list.querySelectorAll('[data-action="delstock"]').forEach(b => b.addEventListener('click', () => removeStock(b.dataset.id)));
+}
+
+function toggleSellForm(id, forceClose){
+  const el = document.getElementById('sell-' + id);
+  if(!el) return;
+  if(forceClose){ el.classList.remove('open'); return; }
+  document.querySelectorAll('.sell-form.open').forEach(f => { if(f.id !== 'sell-'+id) f.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+async function confirmSell(id){
+  const item = stock.find(s => String(s.id) === String(id));
+  if(!item) return;
+  const el = document.getElementById('sell-' + id);
+  const prixVente = toNumber(el.querySelector('.sell-prix').value);
+  const date = el.querySelector('.sell-date').value;
+  if(isNaN(prixVente) || !date){
+    showBanner("Indique un prix de vente valide.", 'error');
+    return;
+  }
+
+  ventes.push({ id: Date.now(), nom: item.nom, cout: item.cout, prixVente, date, photo: item.photo || null });
+
+  item.qte -= 1;
+  if(item.qte <= 0){
+    stock = stock.filter(s => s.id !== item.id);
+  }
+
+  renderAll();
+  await save();
+}
+
+async function removeStock(id){
+  stock = stock.filter(s => String(s.id) !== String(id));
+  renderAll();
+  await save();
+}
+
+function renderVentes(){
+  const list = document.getElementById('ventesList');
+  const title = document.getElementById('ventesTitle');
+  if(ventes.length === 0){
+    title.textContent = 'Historique des ventes';
+    list.innerHTML = '<div class="empty">Aucune vente enregistrée pour l’instant.</div>';
+    return;
+  }
+  title.textContent = `Historique des ventes (${ventes.length})`;
+  const sorted = [...ventes].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+  list.innerHTML = sorted.map(v => {
+    const maPart = v.prixVente * (pourcentage / 100);
+    const gain = maPart - v.cout;
+    return `
+      <div class="entry">
+        <div class="entry-photo">${photoHtml(v)}</div>
+        <div class="entry-body">
+          <div class="entry-top">
+            <div>
+              <div class="entry-name">${escapeHtml(v.nom)}</div>
+              <div class="entry-meta">${fmtDate(v.date)} · vendu ${fmt(v.prixVente)} · ma part ${fmt(maPart)} · coût ${fmt(v.cout)}</div>
+            </div>
+            <div class="entry-nums">
+              <div class="entry-profit ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${fmt(gain)}</div>
+            </div>
+          </div>
+          <button class="del" type="button" data-id="${v.id}" data-action="delvente">supprimer</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-action="delvente"]').forEach(b => b.addEventListener('click', () => removeVente(b.dataset.id)));
+}
+
+async function removeVente(id){
+  ventes = ventes.filter(v => String(v.id) !== String(id));
+  renderAll();
+  await save();
+}
+
+/* ---------- Ajouter au stock (validation manuelle, pas de soumission native) ---------- */
+document.getElementById('btnAjouter').addEventListener('click', async () => {
+  const nomEl = document.getElementById('nom');
+  const coutEl = document.getElementById('cout');
+  const prixEl = document.getElementById('prixPrevu');
+  const qteEl = document.getElementById('qte');
+
+  document.getElementById('err-nom').classList.remove('show');
+  document.getElementById('err-nums').classList.remove('show');
+  document.getElementById('err-qte').classList.remove('show');
+
+  const nom = nomEl.value.trim();
+  const cout = toNumber(coutEl.value);
+  const prixPrevu = toNumber(prixEl.value);
+  const qte = parseInt(toNumber(qteEl.value), 10);
+
+  let ok = true;
+  if(!nom){ document.getElementById('err-nom').classList.add('show'); ok = false; }
+  if(isNaN(cout) || isNaN(prixPrevu) || cout < 0 || prixPrevu < 0){ document.getElementById('err-nums').classList.add('show'); ok = false; }
+  if(isNaN(qte) || qte < 1){ document.getElementById('err-qte').classList.add('show'); ok = false; }
+  if(!ok) return;
+
+  stock.push({ id: Date.now(), nom, cout, prixPrevu, qte, photo: pendingPhoto });
+
+  nomEl.value = '';
+  coutEl.value = '';
+  prixEl.value = '';
+  qteEl.value = '1';
+  pendingPhoto = null;
+  document.getElementById('photoPreview').innerHTML = 'Photo';
+  document.getElementById('photoInput').value = '';
+
+  setTab('stock');
+  renderAll();
+  await save();
+});
+
+document.getElementById('pourcentage').addEventListener('change', async (ev) => {
+  let val = toNumber(ev.target.value);
+  if(isNaN(val) || val < 0) val = 0;
+  if(val > 100) val = 100;
+  pourcentage = val;
+  ev.target.value = val;
+  renderAll();
+  await save();
+});
+
+/* ---------- Onglets ---------- */
+function setTab(name){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.getElementById('panel-ajouter').style.display = name === 'ajouter' ? 'block' : 'none';
+  document.getElementById('panel-stock').style.display = name === 'stock' ? 'block' : 'none';
+  document.getElementById('panel-ventes').style.display = name === 'ventes' ? 'block' : 'none';
+}
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => setTab(tab.dataset.tab));
+});
+
+load();
+</script>
+</body>
+</html>
